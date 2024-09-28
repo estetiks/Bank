@@ -118,7 +118,7 @@ nav ul li button:hover {
     opacity: 1;
 }
 
-.convert{
+.convert, .remove{
     position: relative;
     max-width: 500px;
     padding: 45px;
@@ -130,7 +130,7 @@ nav ul li button:hover {
     transition: transform .8s;
 }
 
-.modal.open .convert{
+.modal.open .convert, .modal.open .remove{
     transform: scale(1);
 }
 
@@ -207,13 +207,13 @@ nav ul li button:hover {
 
 
 
-.currency-input {
+.currency-input, .remove-input {
     display: flex;
     justify-content: space-between;
     align-items: center;
 }
 
-.currency-input input {
+.currency-input input,  .currency-input .remove-input{
     flex-grow: 1; /* Поле ввода растягивается, занимая доступное пространство */
     margin-right: 10px; /* Отступ справа для кнопок */
 }

@@ -65,6 +65,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 return;
             }
 
+            console.log(firstCurrency)
 
             fetch("/calculate_money", {
                 method: "POST",
@@ -79,8 +80,7 @@ document.addEventListener("DOMContentLoaded", function() {
             })
             .then(response => response.json())
             .then(data => {
-                // Обновляем второе поле с конвертированной суммой
-                document.getElementById("last_money").value = data.output.toFixed(2);
+                document.getElementById("last_money").value = data.output;
                 //firstMoneyInput.value = "";  // Сброс значения первого поля
             })
             .catch(error => {
@@ -101,17 +101,29 @@ document.addEventListener("DOMContentLoaded", function() {
         e.preventDefault();
 
         if (firstCurrency && secondCurrency && firstMoneyInput.value) {
-            const amount = parseFloat(firstMoneyInput.value);
 
+            const validPattern = /^-?\d+\.?\d*$/;
+            if (!validPattern.test(firstMoneyInput.value)) {
+                alert("Please enter a valid positive number.");
+                return;
+            }
+
+            const amount = parseFloat(firstMoneyInput.value);
+            
 
             if (isNaN(amount) || amount < 0) {
                 alert("Please enter a valid positive number.");
                 return;
             }
 
+            if (firstCurrency === secondCurrency){
+                alert("Please enter a different currecy.");
+                return;
+            }
+
 
             // AJAX-запрос на сервер Flask
-            fetch("/convert", {
+            fetch("/convert_money", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -125,8 +137,11 @@ document.addEventListener("DOMContentLoaded", function() {
             .then(response => response.json())
             .then(data => {
                 // Получаем результат с сервера и обновляем второе поле
-                document.getElementById("last_money").value = data.converted_amount.toFixed(2);
+                document.getElementById("last_money").value = data.get;
                 firstMoneyInput.value = "0";  // Сброс значения первого поля
+                if (data.get === 'success!'){
+                    window.location.href = '/dashboard';
+                }
             })
             .catch(error => {
                 console.error("Error:", error);

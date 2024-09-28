@@ -19,7 +19,7 @@
             <li><button id="sell-open-btn">Sell shares</button></li>
             <li><a href="#">Put money into an account</a></li>
             {% if current_user.username == 'admin' %}
-            <li><a href="#">Get admin panel</a></li>
+            <li><button id="admin-open-btn">Get admin panel</button></li>
             {% endif %}
         </ul>
     </nav>
@@ -63,17 +63,6 @@
 
 
 
-
-
-
-
-
-
-
-
-
-
-
 <div class="modal" id="window-convert-sell">
     <div class="convert">
         <section id="input">
@@ -90,17 +79,21 @@
                     </div>
                 </div>
 
-                <button type="submit">Sell</button>
+                <button type="submit" class="calculate-shares">Calculate</button>
 
                 <label for="last_money">GET</label>
                 <div class="currency-input">
                     <input type="text" id="last_money" name="last_money" readonly>
                     <div class="currency-buttons">
-                        <button type="button" class="currency-btn" data-currency="RUB">₽</button>
-                        <button type="button" class="currency-btn" data-currency="USD">$</button>
-                        <button type="button" class="currency-btn" data-currency="EUR">€</button>
+                        <button type="button" class="shares-btn" data-currency="RUB">₽</button>
+                        <button type="button" class="shares-btn" data-currency="USD">$</button>
+                        <button type="button" class="shares-btn" data-currency="EUR">€</button>
                     </div>
                 </div>
+
+                <button type="submit" class="convert-shares">Sell</button>
+
+
             </form>
         </section>
     </div>
@@ -109,11 +102,40 @@
 
 
 
+{% if current_user.username == 'admin' %}
+<div class="modal" id="window-admin">
+    <div class="remove">
+        <section id="input">
+            <h2>Block users</h2>
+            <form method="POST" action="{{ url_for('remove_user') }}">
+                <label for="remove">Enter User</label>
+                
+                <!-- Добавим обертку для инпута и кнопок валют -->
+                <div class="remove-input">
+                    <input type="text" id="remove" name="remove" required>
+                </div>
 
+                <button type="submit" class="remove">Send</button> 
 
+            </form>
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        {% if category == 'error' %}
+                            <div class="alert-error" role="alert">
+                            {{message}}
+                            </div>
+                        {% endif %}
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+        </section>
+    </div>
+</div>
 
-
-
+<script src="static/scripts/admin.js"></script>
+<script src="static/scripts/openAdmin.js"></script>
+{% endif %}
 
 
 
@@ -127,9 +149,9 @@
 
     <section class="balance">
         <p>Balance</p> 
-        <p>{{ current_user.balance }} $</p> 
-        <p>{{ current_user.balance }} ₽</p> 
-        <p>{{ current_user.balance }} €</p>
+        <p>{{ current_user.balance_RUB }} ₽</p> 
+        <p>{{ current_user.balance_USD }} $</p> 
+        <p>{{ current_user.balance_EUR }} €</p>
     </section>
 
     <section class="chart">

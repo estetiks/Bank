@@ -1,7 +1,9 @@
 from app import app
+import pickle
+import json
 import os
-from base64 import b64decode
-from flask import render_template, redirect, request, flash, url_for,  abort, send_from_directory, session, jsonify
+from base64 import b64decode, b64encode
+from flask import render_template, redirect, request, flash, url_for,  abort, send_from_directory, session, jsonify, render_template_string
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_required, login_user, logout_user, current_user
 import bcrypt
@@ -17,6 +19,15 @@ EXCHANGE_RATES = {
     ('RUB', 'EUR'): 0.012,
 }
 
+
+EXCHANGE_RATES_SHARES = {
+    ('HL', 'EUR'): 0.56,
+    ('HL', 'USD'): 0.70,
+    ('HL', 'RUB'): 76.0,
+    ('TUBE', 'USD'): 1.18,
+    ('TUBE', 'RUB'): 82.0,
+    ('TUBE', 'USD'): 1.14,
+    }
 
 
 
@@ -37,7 +48,11 @@ class Users(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True, nullable = False)
     username = db.Column(db.String(25), unique=True, nullable = False)
     password_hash = db.Column(db.String(500), nullable = False)
-    balance = db.Column(db.Float, default=0, nullable=False)
+    balance_RUB = db.Column(db.Float, default=0, nullable=False)
+    balance_USD = db.Column(db.Float, default=0, nullable=False)
+    balance_EUR = db.Column(db.Float, default=0, nullable=False)
+    shares_HL = db.Column(db.Integer, default=0, nullable=False)
+    shares_TUBE = db.Column(db.Integer, default=0, nullable=False)
 
 salt = bcrypt.gensalt()
 
@@ -150,10 +165,48 @@ def download_file():
 
 
 
+@app.route('/remove_user', methods=["POST", "GET"])
+@login_required
+def remove_user():
+    if current_user.username != 'admin':
+        abort(403)
+    else:
+        if request.method == "POST":
+            user = request.form.get("remove")
+            user_to_delete = Users.query.filter_by(username=user).first()
+            recovery_data = pickle.dumps(user_to_delete)
+            recovery_data = b64encode(recovery_data).decode()
+        if user_to_delete: 
+            return render_template("remove.html", recovery_data=recovery_data)
+        else:
+            flash("User not found", category="error")
+        return redirect(url_for("dashboard")) 
+
+
+
+@app.route('/restore_user', methods=["POST", "GET"])
+@login_required
+def restore_user():
+    if current_user.username != 'admin':
+        abort(403)
+    else:
+        if request.method == "POST":
+            recovery_data = request.form['recovery_data']
+            try:
+                recovery_data = pickle.loads(b64decode(recovery_data))
+                flash(f"user {recovery_data.username} restore", category="success")
+            except:
+                flash("User unrestored", category="error")
+            
+        return render_template("restore_user.html")
+
+
+
+
 
 @app.route('/calculate_money', methods=['POST'])
 @login_required
-def get_exchange_rate():
+def calculate_money():
     data = request.get_json()
     amount = data.get('amount')
     from_currency = data.get('from_currency')
@@ -170,3 +223,77 @@ def get_exchange_rate():
 
     
     return jsonify({'output': output})
+
+
+
+
+@app.route('/calculate_shares', methods=['POST'])
+@login_required
+def calculate_shares():
+    data = request.get_json()
+    amount = data.get('amount')
+    from_currency = data.get('from_currency')
+    to_currency = data.get('to_currency')
+
+    
+    # Получение коэффициента конверсии
+    rate = EXCHANGE_RATES_SHARES.get((from_currency, to_currency))
+
+    output = rate * int(amount)
+
+    if output is None or rate is None:
+        return jsonify({'error': 'Exchange rate not found.'}), 404
+
+    
+    return jsonify({'output': output})
+
+
+
+
+
+@app.route('/convert_money', methods=['POST'])
+@login_required
+def convert_money():
+    data = request.get_json()
+    amount = data.get('amount')
+    from_currency = data.get('from_currency')
+    to_currency = data.get('to_currency')
+
+    if from_currency == "RUB":
+        if float(amount) > current_user.balance_RUB:
+            return jsonify({'get': 'insufficient funds'})
+        elif float(amount) <= current_user.balance_RUB:
+            current_user.balance_RUB = current_user.balance_RUB - float(amount)
+    elif from_currency == "USD":
+        if float(amount) > current_user.balance_USD:
+            return jsonify({'get': 'insufficient funds'})
+        elif float(amount) <= current_user.balance_USD:
+            current_user.balance_USD = current_user.balance_USD - float(amount)
+    elif from_currency == "EUR":
+        if float(amount) > current_user.balance_EUR:
+            return jsonify({'get': 'insufficient funds'})
+        elif float(amount) <= current_user.balance_EUR:
+            current_user.balance_EUR = current_user.balance_EUR - float(amount)    
+
+
+    rate = EXCHANGE_RATES.get((from_currency, to_currency))
+
+    get = rate * float(amount)
+
+    if get is None or rate is None:
+        return jsonify({'error': 'Exchange rate not found.'}), 404
+    
+    if to_currency == "RUB":
+        current_user.balance_RUB = current_user.balance_RUB + get
+        db.session.commit()
+        return jsonify({'get': 'success!'})
+    elif to_currency == "USD":
+        current_user.balance_USD = current_user.balance_USD + get
+        db.session.commit()
+        return jsonify({'get': 'success!'})
+    elif to_currency == "EUR":
+        current_user.balance_EUR = current_user.balance_EUR + get
+        db.session.commit()
+        return jsonify({'get': 'success!'})
+    else: 
+        return jsonify({'get': 'somthung error'})

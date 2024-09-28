@@ -13,6 +13,8 @@ document.addEventListener("DOMContentLoaded", function() {
         } else {
             secondCurrency = button.dataset.currency;
         }
+
+        
     }
 
     const firstCurrencyButtons = document.querySelectorAll('.currency-input:first-of-type .shares-btn');
@@ -22,22 +24,115 @@ document.addEventListener("DOMContentLoaded", function() {
         });
     });
 
-    const secondCurrencyButtons = document.querySelectorAll('.currency-input:last-of-type .currency-btn');
+    const secondCurrencyButtons = document.querySelectorAll('.currency-input:last-of-type .shares-btn');
     secondCurrencyButtons.forEach(button => {
         button.addEventListener('click', function() {
             handleCurrencyButtonClick(this, this.parentElement, false);
         });
-
     });
 
-    // Запретить ввод отрицательных чисел
-    const firstMoneyInput = document.getElementById("shares");
-    firstMoneyInput.addEventListener("input", function() {
-        const value = parseFloat(firstMoneyInput.value);
-        if (value < 0) {
-            firstMoneyInput.value = "";  // Очищаем поле, если введено отрицательное число
-            alert("Please enter a positive number.");
+
+
+
+    document.querySelector('.calculate-shares').addEventListener('click', function(e) {
+        e.preventDefault();
+
+        if (firstCurrency && secondCurrency && firstMoneyInput.value) {
+
+            const validPattern = /^-?\d+$/;
+            if (!validPattern.test(firstMoneyInput.value)) {
+                alert("Please enter a valid positive integer number.");
+                return;
+            }
+
+            const amount = parseInt(firstMoneyInput.value);
+            
+
+            if (isNaN(amount) || amount < 0) {
+                alert("Please enter a valid positive int number.");
+                return;
+            }
+
+
+            fetch("/calculate_shares", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    amount: amount,
+                    from_currency: firstCurrency,
+                    to_currency: secondCurrency
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById("last_money").value = data.output;
+                //firstMoneyInput.value = "";  // Сброс значения первого поля
+            })
+            .catch(error => {
+                console.error("Error:", error);
+            });
         }
     });
 
+
+
+
+
+
+
+
+    // Отправка данных на сервер для конвертации
+    document.querySelector('.send').addEventListener('click', function(e) {
+        e.preventDefault();
+
+        if (firstCurrency && secondCurrency && firstMoneyInput.value) {
+
+            const validPattern = /^-?\d+\.?\d*$/;
+            if (!validPattern.test(firstMoneyInput.value)) {
+                alert("Please enter a valid positive number.");
+                return;
+            }
+
+            const amount = parseFloat(firstMoneyInput.value);
+            
+
+            if (isNaN(amount) || amount < 0) {
+                alert("Please enter a valid positive number.");
+                return;
+            }
+
+            if (firstCurrency === secondCurrency){
+                alert("Please enter a different currecy.");
+                return;
+            }
+
+
+            // AJAX-запрос на сервер Flask
+            fetch("/convert_money", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    amount: amount,
+                    from_currency: firstCurrency,
+                    to_currency: secondCurrency
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Получаем результат с сервера и обновляем второе поле
+                document.getElementById("last_money").value = data.get;
+                firstMoneyInput.value = "0";  // Сброс значения первого поля
+                if (data.get === 'success!'){
+                    window.location.href = '/dashboard';
+                }
+            })
+            .catch(error => {
+                console.error("Error:", error);
+            });
+        }
+    });
 });
