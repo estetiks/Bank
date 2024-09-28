@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Register</title>
+        <link rel="stylesheet" href="static/css/main.css">
+    </head>
+<body>
+    <button class="back" onclick="back()"></button>
+    <section id="input">
+        <h1>Register</h1>
+        <form method="POST">
+            <label for="username">Username</label>
+            <input type="text" id="username" name="username" placeholder="from 5 to 20 characters or digits" required>
+    
+            <label for="email">Email</label>
+            <input type="email" id="email" name="email" placeholder="example@ex.com" required>
+    
+            <label for="password">Password</label>
+            <input type="password" id="password" name="password" placeholder="contain at least 10 characters" required>
+
+            <label for="confirm_password">Confirm password</label>
+            <input type="password" id="confirm_password" name="confirm_password" required>
+    
+            <button type="submit">Send</button>
+        </form>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    {% if category == 'error' %}
+                    <div class="alert-error" role="alert">
+                        {{message}}
+                    </div>
+                    {% else %}
+                    <div class="alert-success" role="alert"></div>
+                        {{message}}
+                    </div>
+                    {% endif %}
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+    </section>
+    <footer>
+        <p>You already have an account? | <a href="/login">Login</a></p>
+    </footer>
+    <script src="static/scripts/back.js"></script>
+</body>
+</html>

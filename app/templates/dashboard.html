@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard</title>
+    <link rel="stylesheet" href="static/css/dashboard.css">
+</head>
+<body>
+
+<header>
+    <div class="logo">Dashboard</div>
+    <div class="menu-icon" onclick="toggleDropdown()">&#9776; Paid Features</div>
+    <button class="logout" onclick="logout()"></button>
+    <nav id="dropdownMenu" class="hidden">
+        <ul>
+            <li><button class="download" onclick="download()">Download documentacion</button></li>
+            <li><button id="convert-open-btn">Convert currency</button></li>
+            <li><button id="sell-open-btn">Sell shares</button></li>
+            <li><a href="#">Put money into an account</a></li>
+            {% if current_user.username == 'admin' %}
+            <li><a href="#">Get admin panel</a></li>
+            {% endif %}
+        </ul>
+    </nav>
+</header>
+
+<div class="modal" id="window-convert">
+    <div class="convert">
+        <section id="input">
+            <h2>Convert</h2>
+            <form method="POST">
+                <label for="first_money">FROM</label>
+                
+                <!-- Добавим обертку для инпута и кнопок валют -->
+                <div class="currency-input">
+                    <input type="text" id="first_money" name="first_money" required>
+                    <div class="currency-buttons">
+                        <button type="button" class="currency-btn" data-currency="RUB">₽</button>
+                        <button type="button" class="currency-btn" data-currency="USD">$</button>
+                        <button type="button" class="currency-btn" data-currency="EUR">€</button>
+                    </div>
+                </div>
+
+                <button type="submit" class="calculate">Сalculate</button>
+
+                <label for="last_money">TO</label>
+                <div class="currency-input">
+                    <input type="text" id="last_money" name="last_money" readonly>
+                    <div class="currency-buttons">
+                        <button type="button" class="currency-btn" data-currency="RUB">₽</button>
+                        <button type="button" class="currency-btn" data-currency="USD">$</button>
+                        <button type="button" class="currency-btn" data-currency="EUR">€</button>
+                    </div>
+                </div>
+
+                <button type="submit" class="send">Send</button> 
+
+            </form>
+        </section>
+    </div>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div class="modal" id="window-convert-sell">
+    <div class="convert">
+        <section id="input">
+            <h2>Sell</h2>
+            <form method="POST">
+                <label for="shares">SHARES</label>
+                
+                <!-- Добавим обертку для инпута и кнопок валют -->
+                <div class="currency-input">
+                    <input type="text" id="shares" name="shares" required>
+                    <div class="shares-buttons">
+                        <button type="button" class="shares-btn" data-currency="HL">HL</button>
+                        <button type="button" class="shares-btn" data-currency="TUBE">TUBE</button>
+                    </div>
+                </div>
+
+                <button type="submit">Sell</button>
+
+                <label for="last_money">GET</label>
+                <div class="currency-input">
+                    <input type="text" id="last_money" name="last_money" readonly>
+                    <div class="currency-buttons">
+                        <button type="button" class="currency-btn" data-currency="RUB">₽</button>
+                        <button type="button" class="currency-btn" data-currency="USD">$</button>
+                        <button type="button" class="currency-btn" data-currency="EUR">€</button>
+                    </div>
+                </div>
+            </form>
+        </section>
+    </div>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<main>
+    <section class="welcome">
+        <h1>Welcome to Crypto Exchange</h1>
+        <p>{{ current_user.username }}</p>
+    </section>
+
+    <section class="balance">
+        <p>Balance</p> 
+        <p>{{ current_user.balance }} $</p> 
+        <p>{{ current_user.balance }} ₽</p> 
+        <p>{{ current_user.balance }} €</p>
+    </section>
+
+    <section class="chart">
+        <canvas id="cryptoChart" width="400" height="200"></canvas>
+    </section>
+
+    <section class="news-carousel">
+        <button class="nav left" onclick="prevNews()">&#10094;</button>
+        <div class="carousel-container">
+            <div class="news-circle" id="newsContainer">
+                <div class="news-item active">
+                    <img src="static/images/1_news.jpg" alt="News Image">
+                    <h3>Improved security</h3>
+                    <p>Crypto Exchange continues to pay great attention to the security of its users. We conduct regular system audits and update our infrastructure to protect against potential threats.
+
+                        Recently, we have successfully protected our platform from unauthorized access attempts. Thanks to our security measures, it was neutralized without any negative consequences for our customers.</p>
+                </div>
+                <div class="news-item">
+                    <img src="static/images/2_news.jpg" alt="News Image">
+                    <h3>Problems with depositing accounts through banks</h3>
+                    <p>Crypto Exchange reports incomplete availability of its platform due to technical work. We are carrying out scheduled repairs that will help improve the performance and reliability of our service. We had to make a decision to temporarily limit the possibility of depositing funds through bank transfers.</p>
+                </div>
+                <div class="news-item">
+                    <img src="static/images/3_news.webp" alt="News Image">
+                    <h3>API Update</h3>
+                    <p>Our team continues to work on improving our API. The new versions now include advanced features for developers and integration with popular cryptocurrency platforms.
+                        Updating the API will help you create more efficient and innovative solutions based on Crypto Exchange data.
+                        Check out the new API documentation on our official page.
+                        Thank you for your trust and support!</p>
+                </div>
+            </div>
+        </div>
+        <button class="nav right" onclick="nextNews()">&#10095;</button>
+    </section>
+</main>
+
+<footer>
+    <p>&copy; 2024 CryptoExchange. All Rights Reserved. | <a href="#">Privacy Policy</a></p>
+</footer>
+
+<script src="static/scripts/chart.js"></script>
+<script src="static/scripts/toggleDropdown.js"></script>
+<script src="static/scripts/download.js"></script>
+<script src="static/scripts/logout.js"></script>
+<script src="static/scripts/openConvert.js"></script>
+<script src="static/scripts/openSell.js"></script>
+<script src="static/scripts/convertMoney.js"></script>
+<script src="static/scripts/sellShares.js"></script>
+</body>
+</html>
