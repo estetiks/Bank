@@ -3,10 +3,13 @@ import pickle
 import json
 import os
 from base64 import b64decode, b64encode
-from flask import render_template, redirect, request, flash, url_for,  abort, send_from_directory, session, jsonify, render_template_string
+from flask import render_template, redirect, request, flash, url_for,  abort, send_from_directory, session, jsonify, make_response
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_required, login_user, logout_user, current_user
 import bcrypt
+from datetime import datetime, timedelta
+import hashlib
+import subprocess
 from app import rules
 
 EXCHANGE_RATES = {
@@ -129,6 +132,53 @@ def login():
             flash('Invalid login or password', category='error')
     
     return render_template('login.html')
+
+
+
+
+@app.route("/restore_password", methods=["GET","POST"])
+def restore_password():
+    if request.method == "POST":
+        username = request.form["username"]
+        user = Users.query.filter_by(username=username).first()
+        if user:
+            flash("The account recovery code has been sent to your email", category="success")
+            return redirect(f"/get_restore_code/{user.username}")
+        else:
+            flash("user not found", category="error")
+            return redirect(url_for("restore_password"))
+        
+
+    return render_template("restore_password.html")
+
+
+@app.route("/get_restore_code/<string:username>", methods=["GET","POST"])
+def get_restore_code(username):
+    res = make_response(render_template("get_restore_code.html"))
+
+    expires = 60
+    expires_date = datetime.utcnow() + timedelta(seconds=expires)
+    generated_token = os.urandom(32)
+    generated_token = hashlib.sha256(generated_token).hexdigest()
+    res.set_cookie("token", generated_token, expires=expires_date)
+    try:
+        command =['app/share/login', username, 'standoff365@mail.ru']
+        result = subprocess.run(command, capture_output=True, text=True)
+        generate_code = result.stdout[:-1]
+        print(generate_code)
+    except:
+        print("error")
+    if request.method == "POST":
+        if request.form["code"] == generate_code and generated_token == request.cookies.get("token"):
+            return "SUCCESS"
+        else:
+            flash("INCORRECT CODE", category="error")
+
+
+    return res
+
+
+
 
 
 @app.route('/logout')

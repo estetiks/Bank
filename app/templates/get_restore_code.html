@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Login</title>
+        <link rel="stylesheet" href="static/css/main.css">
+    </head>
+<body>
+    <button class="back" onclick="back()"></button>
+    <section id="input">
+        <h1>Enter code</h1>
+        <form method="POST">
+            <input type="text" id="code" name="code" required>
+
+            <button type="submit">send code</button>
+        </form>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    {% if category == 'error' %}
+                    <div class="alert-error" role="alert">
+                        {{message}}
+                    </div>
+                    {% else %}
+                    <div class="alert-success" role="alert"></div>
+                        {{message}}
+                    </div>
+                    {% endif %}
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+    </section>
+    <script src="static/scripts/back.js"></script>
+</body>
+</html>
