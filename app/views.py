@@ -51,9 +51,11 @@ login_manager = LoginManager(app)
 login_manager.login_view = 'login'
 
 
+
 class Users(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True, nullable = False)
     username = db.Column(db.String(25), unique=True, nullable = False)
+    email = db.Column(db.String, unique=False, nullable = False)
     password_hash = db.Column(db.String(500), nullable = False)
     balance_RUB = db.Column(db.Float, default=0, nullable=False)
     balance_USD = db.Column(db.Float, default=0, nullable=False)
@@ -84,6 +86,7 @@ def register():
     global salt
     if request.method == 'POST':
         username = request.form['username']
+        email = request.form['email']
         password = request.form['password']
         confirm_password = request.form['confirm_password']
 
@@ -102,7 +105,7 @@ def register():
 
         hashed_password = bcrypt.hashpw(password.encode(), salt).decode()
 
-        new_user = Users(username=username, password_hash=hashed_password)
+        new_user = Users(username=username, password_hash=hashed_password, email=email)
         db.session.add(new_user)
         db.session.commit()
         
@@ -145,7 +148,8 @@ def restore_password():
     if request.method == "POST":
         global g
         username = request.form["username"]
-        if not username:
+        user = Users.query.filter_by(username=username).first()
+        if not user:
             return redirect(url_for("restore_password"))
         res = make_response(redirect(f"/get_restore_code/{username}"))
 
@@ -161,7 +165,6 @@ def restore_password():
         generate_code = result.stdout[:-1]
         g['generate_code'] = generate_code
 
-        user = Users.query.filter_by(username=username).first()
         if user:
             flash("The account recovery code has been sent to your email", category="success")
             return res
