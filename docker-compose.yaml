@@ -4,6 +4,7 @@ services:
   web:
     build:
       context: .
+      dockerfile: Dockerfile
     container_name: flask_app
     ports:
       - "80:80"   # Nginx
@@ -12,6 +13,9 @@ services:
       - db
     environment:
       - DATABASE_URL=postgresql://admin:crypto@db:5432/crypto_exchange
+      - ADMIN_USERNAME=admin
+      - ADMIN_EMAIL=admin@example.com
+      - ADMIN_PASSWORD=crypto
     volumes:
       - .:/app
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf

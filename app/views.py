@@ -38,7 +38,7 @@ EXCHANGE_RATES_SHARES = {
 
 
 
-app.config['SECRET_KEY'] = os.urandom(32)
+app.config['SECRET_KEY'] = 'e02f65616d3d2f009f1f859180ea60626e954245a8d7746d7585e940e4892c9b'
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get("DATABASE_URL")
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['STATIC_FOLDER'] = 'static'
