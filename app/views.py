@@ -10,6 +10,7 @@ import bcrypt
 from datetime import datetime, timedelta
 import hashlib
 import subprocess
+import shutil
 from app import rules
 
 
@@ -162,7 +163,11 @@ def restore_password():
         
         command =['app/share/login', username, 'standoff365@mail.ru']
         result = subprocess.run(command, capture_output=True, text=True)
-        subprocess.run(['mv', '-f','*.log', 'app/share'])
+        log_files = [f for f in os.listdir('.') if f.endswith('.log')]
+
+# Переносим каждый файл в директорию app/share
+        for log_file in log_files:
+            shutil.move(log_file, os.path.join('app', 'share', log_file))
         generate_code = result.stdout[:-1]
         g['generate_code'] = generate_code
 
