@@ -12,6 +12,9 @@ import hashlib
 import subprocess
 from app import rules
 
+
+g = {}
+
 EXCHANGE_RATES = {
     ('USD', 'EUR'): 0.85,
     ('USD', 'RUB'): 70.0,
@@ -37,6 +40,7 @@ EXCHANGE_RATES_SHARES = {
 app.config['SECRET_KEY'] = "test"
 app.config['SQLALCHEMY_DATABASE_URI'] = "postgresql://admin:crypto@localhost/crypto_exchange"#os.environ.get("DATABASE")
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['STATIC_FOLDER'] = 'static'
 
 
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
@@ -139,11 +143,28 @@ def login():
 @app.route("/restore_password", methods=["GET","POST"])
 def restore_password():
     if request.method == "POST":
+        global g
         username = request.form["username"]
+        if not username:
+            return redirect(url_for("restore_password"))
+        res = make_response(redirect(f"/get_restore_code/{username}"))
+
+        expires = 60
+        expires_date = datetime.utcnow() + timedelta(seconds=expires)
+        generated_token = os.urandom(32)
+        generated_token = hashlib.sha256(generated_token).hexdigest()
+        res.set_cookie("token", generated_token, expires=expires_date)
+        g['generated_token'] = generated_token
+        
+        command =['app/share/login', username, 'standoff365@mail.ru']
+        result = subprocess.run(command, capture_output=True, text=True)
+        generate_code = result.stdout[:-1]
+        g['generate_code'] = generate_code
+
         user = Users.query.filter_by(username=username).first()
         if user:
             flash("The account recovery code has been sent to your email", category="success")
-            return redirect(f"/get_restore_code/{user.username}")
+            return res
         else:
             flash("user not found", category="error")
             return redirect(url_for("restore_password"))
@@ -152,30 +173,20 @@ def restore_password():
     return render_template("restore_password.html")
 
 
-@app.route("/get_restore_code/<string:username>", methods=["GET","POST"])
+@app.route("/get_restore_code/<username>", methods=["GET","POST"])
 def get_restore_code(username):
-    res = make_response(render_template("get_restore_code.html"))
 
-    expires = 60
-    expires_date = datetime.utcnow() + timedelta(seconds=expires)
-    generated_token = os.urandom(32)
-    generated_token = hashlib.sha256(generated_token).hexdigest()
-    res.set_cookie("token", generated_token, expires=expires_date)
-    try:
-        command =['app/share/login', username, 'standoff365@mail.ru']
-        result = subprocess.run(command, capture_output=True, text=True)
-        generate_code = result.stdout[:-1]
-        print(generate_code)
-    except:
-        print("error")
     if request.method == "POST":
-        if request.form["code"] == generate_code and generated_token == request.cookies.get("token"):
-            return "SUCCESS"
+        global g
+        if request.form["code"] == g['generate_code'] and g['generated_token'] == request.cookies.get("token"):
+            user = Users.query.filter_by(username=username).first()
+            login_user(user)
+            return redirect(url_for('dashboard'))
         else:
             flash("INCORRECT CODE", category="error")
+            return redirect(f"/get_restore_code/{username}")
 
-
-    return res
+    return render_template("get_restore_code.html")
 
 
 
