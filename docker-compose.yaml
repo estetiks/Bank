@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  web:
+    build:
+      context: .
+    container_name: flask_app
+    ports:
+      - "80:80"   # Nginx
+      - "8000:8000" # Flask через Gunicorn
+    depends_on:
+      - db
+    environment:
+      - DATABASE_URL=postgresql://admin:crypto@db:5432/crypto_exchange
+    volumes:
+      - .:/app
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+
+  db:
+    image: postgres:13
+    container_name: postgres_db
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: crypto
+      POSTGRES_DB: crypto_exchange
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:

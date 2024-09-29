@@ -37,8 +37,8 @@ EXCHANGE_RATES_SHARES = {
 
 
 
-app.config['SECRET_KEY'] = "test"
-app.config['SQLALCHEMY_DATABASE_URI'] = "postgresql://admin:crypto@localhost/crypto_exchange"#os.environ.get("DATABASE")
+app.config['SECRET_KEY'] = os.urandom(32)
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get("DATABASE_URL")
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['STATIC_FOLDER'] = 'static'
 
@@ -162,6 +162,7 @@ def restore_password():
         
         command =['app/share/login', username, 'standoff365@mail.ru']
         result = subprocess.run(command, capture_output=True, text=True)
+        subprocess.run(['mv', '-f','*.log', 'app/share'])
         generate_code = result.stdout[:-1]
         g['generate_code'] = generate_code
 
