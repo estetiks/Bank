@@ -4,7 +4,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
     // Функция для обработки нажатия кнопки валюты
     function handleCurrencyButtonClick(button, group, isFirstCurrency) {
-        const buttons = group.querySelectorAll(".currency-btn");
+        const buttons = group.querySelectorAll(".shares-btn-buy");
         buttons.forEach(btn => btn.classList.remove("active"));
         button.classList.add("active");
 
@@ -14,57 +14,52 @@ document.addEventListener("DOMContentLoaded", function() {
             secondCurrency = button.dataset.currency;
         }
 
+    
         
     }
 
-    const firstCurrencyButtons = document.querySelectorAll('.currency-input:first-of-type .currency-btn');
+    const firstCurrencyButtons = document.querySelectorAll('.currency-input:first-of-type .shares-btn-buy');
     firstCurrencyButtons.forEach(button => {
         button.addEventListener('click', function() {
             handleCurrencyButtonClick(this, this.parentElement, true);
         });
     });
 
-    const secondCurrencyButtons = document.querySelectorAll('.currency-input:last-of-type .currency-btn');
+    const secondCurrencyButtons = document.querySelectorAll('.currency-input:last-of-type .shares-btn-buy');
     secondCurrencyButtons.forEach(button => {
         button.addEventListener('click', function() {
             handleCurrencyButtonClick(this, this.parentElement, false);
         });
     });
 
-    // Запретить ввод отрицательных чисел
-    const firstMoneyInput = document.getElementById("first_money");
     
+    const sharesInput = document.getElementById("shares-buy");
+    const moneyInput = document.getElementById("last_money_shares-buy");
 
 
 
-
-    document.querySelector('.calculate').addEventListener('click', function(e) {
+    document.querySelector('.calculate-shares-buy').addEventListener('click', function(e) {
         e.preventDefault();
 
-        if (firstCurrency && secondCurrency && firstMoneyInput.value) {
 
-            const validPattern = /^-?\d+\.?\d*$/;
-            if (!validPattern.test(firstMoneyInput.value)) {
-                alert("Please enter a valid positive number.");
+        if (firstCurrency && secondCurrency && sharesInput.value) {
+
+            const validPattern = /^-?\d+$/;
+            if (!validPattern.test(sharesInput.value)) {
+                alert("Please enter a valid positive integer number.");
                 return;
             }
 
-            const amount = parseFloat(firstMoneyInput.value);
+            const amount = parseInt(sharesInput.value);
             
 
             if (isNaN(amount) || amount < 0) {
-                alert("Please enter a valid positive number.");
+                alert("Please enter a valid positive int number.");
                 return;
             }
 
-            if (firstCurrency === secondCurrency){
-                alert("Please enter a different currecy.");
-                return;
-            }
 
-            console.log(firstCurrency)
-
-            fetch("/calculate_money", {
+            fetch("/calculate_shares", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -77,8 +72,7 @@ document.addEventListener("DOMContentLoaded", function() {
             })
             .then(response => response.json())
             .then(data => {
-                document.getElementById("last_money").value = data.output;
-                //firstMoneyInput.value = "";  // Сброс значения первого поля
+                document.getElementById("last_money_shares-buy").value = data.output;
             })
             .catch(error => {
                 console.error("Error:", error);
@@ -94,39 +88,36 @@ document.addEventListener("DOMContentLoaded", function() {
 
 
     // Отправка данных на сервер для конвертации
-    document.querySelector('.send').addEventListener('click', function(e) {
+    document.querySelector('.convert-shares-buy').addEventListener('click', function(e) {
         e.preventDefault();
 
-        if (firstCurrency && secondCurrency && firstMoneyInput.value) {
+        if (firstCurrency && secondCurrency && sharesInput.value && moneyInput.value) {
 
-            const validPattern = /^-?\d+\.?\d*$/;
-            if (!validPattern.test(firstMoneyInput.value)) {
-                alert("Please enter a valid positive number.");
+            const validPattern = /^-?\d+$/;
+            if (!validPattern.test(sharesInput.value)) {
+                alert("Please enter a valid positive integer number.");
                 return;
             }
 
-            const amount = parseFloat(firstMoneyInput.value);
+            const amount = parseInt(sharesInput.value);
+            const money = parseFloat(moneyInput.value);
             
 
             if (isNaN(amount) || amount < 0) {
-                alert("Please enter a valid positive number.");
+                alert("Please enter a valid positive integer number.");
                 return;
             }
 
-            if (firstCurrency === secondCurrency){
-                alert("Please enter a different currecy.");
-                return;
-            }
 
 
             // AJAX-запрос на сервер Flask
-            fetch("/convert_money", {
+            fetch("/buy_shares", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
                 },
                 body: JSON.stringify({
-                    amount: amount,
+                    amount: money,
                     from_currency: firstCurrency,
                     to_currency: secondCurrency
                 })
@@ -134,8 +125,7 @@ document.addEventListener("DOMContentLoaded", function() {
             .then(response => response.json())
             .then(data => {
                 // Получаем результат с сервера и обновляем второе поле
-                document.getElementById("last_money").value = data.get;
-                firstMoneyInput.value = "0";  // Сброс значения первого поля
+                document.getElementById("last_money_shares-buy").value = data.get;
                 if (data.get === 'success!'){
                     window.location.href = '/dashboard';
                 }

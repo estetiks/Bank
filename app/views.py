@@ -32,7 +32,7 @@ EXCHANGE_RATES_SHARES = {
     ('HL', 'RUB'): 76.0,
     ('TUBE', 'USD'): 1.18,
     ('TUBE', 'RUB'): 82.0,
-    ('TUBE', 'USD'): 1.14,
+    ('TUBE', 'EUR'): 1.14,
     }
 
 
@@ -300,7 +300,7 @@ def calculate_shares():
     # Получение коэффициента конверсии
     rate = EXCHANGE_RATES_SHARES.get((from_currency, to_currency))
 
-    output = rate * int(amount)
+    output = rate * amount
 
     if output is None or rate is None:
         return jsonify({'error': 'Exchange rate not found.'}), 404
@@ -354,6 +354,100 @@ def convert_money():
         return jsonify({'get': 'success!'})
     elif to_currency == "EUR":
         current_user.balance_EUR = current_user.balance_EUR + get
+        db.session.commit()
+        return jsonify({'get': 'success!'})
+    else: 
+        return jsonify({'get': 'somthung error'})
+
+
+
+@app.route('/sell_shares', methods=['POST'])
+@login_required
+def sell_shares():
+    data = request.get_json()
+    amount = data.get('amount')
+    from_currency = data.get('from_currency')
+    to_currency = data.get('to_currency')
+
+    if from_currency == "HL":
+        if int(amount) > current_user.shares_HL:
+            return jsonify({'get': 'not enough shares'})
+        elif int(amount) <= current_user.shares_HL:
+            current_user.shares_HL = current_user.shares_HL - int(amount)
+    elif from_currency == "TUBE":
+        if int(amount) > current_user.shares_TUBE:
+            return jsonify({'get': 'not enough shares'})
+        elif int(amount) <= current_user.shares_TUBE:
+            current_user.shares_TUBE = current_user.shares_TUBE - int(amount)  
+
+
+    rate = EXCHANGE_RATES_SHARES.get((from_currency, to_currency))
+
+    get = rate * int(amount)
+
+    if get is None or rate is None:
+        return jsonify({'error': 'Exchange rate not found.'}), 404
+    
+    if to_currency == "RUB":
+        current_user.balance_RUB = current_user.balance_RUB + get
+        db.session.commit()
+        return jsonify({'get': 'success!'})
+    elif to_currency == "USD":
+        current_user.balance_USD = current_user.balance_USD + get
+        db.session.commit()
+        return jsonify({'get': 'success!'})
+    elif to_currency == "EUR":
+        current_user.balance_EUR = current_user.balance_EUR + get
+        db.session.commit()
+        return jsonify({'get': 'success!'})
+    else: 
+        return jsonify({'get': 'somthung error'})
+    
+
+
+
+
+
+
+@app.route('/buy_shares', methods=['POST'])
+@login_required
+def buy_shares():
+    data = request.get_json()
+    amount = data.get('amount')
+    from_currency = data.get('from_currency')
+    to_currency = data.get('to_currency')
+
+    if to_currency == "RUB":
+        if float(amount) > current_user.balance_RUB:
+            return jsonify({'get': 'insufficient funds'})
+        elif float(amount) <= current_user.balance_RUB:
+            current_user.balance_RUB = current_user.balance_RUB - float(amount)
+    elif to_currency == "USD":
+        if float(amount) > current_user.balance_USD:
+            return jsonify({'get': 'insufficient funds'})
+        elif float(amount) <= current_user.balance_USD:
+            current_user.balance_USD = current_user.balance_USD - float(amount)
+    elif to_currency == "EUR":
+        if float(amount) > current_user.balance_EUR:
+            return jsonify({'get': 'insufficient funds'})
+        elif float(amount) <= current_user.balance_EUR:
+            current_user.balance_EUR = current_user.balance_EUR - float(amount)  
+
+
+    rate = EXCHANGE_RATES_SHARES.get((from_currency, to_currency))
+
+    get = float(amount) / rate
+    get = int(get)
+
+    if get is None or rate is None:
+        return jsonify({'error': 'Exchange rate not found.'}), 404
+    
+    if from_currency == "HL":
+        current_user.shares_HL = current_user.shares_HL + get
+        db.session.commit()
+        return jsonify({'get': 'success!'})
+    elif from_currency == "TUBE":
+        current_user.shares_TUBE = current_user.shares_TUBE + get
         db.session.commit()
         return jsonify({'get': 'success!'})
     else: 

@@ -10,13 +10,14 @@
 
 <header>
     <div class="logo">Dashboard</div>
-    <div class="menu-icon" onclick="toggleDropdown()">&#9776; Paid Features</div>
+    <div class="menu-icon" onclick="toggleDropdown()">&#9776; Actions</div>
     <button class="logout" onclick="logout()"></button>
     <nav id="dropdownMenu" class="hidden">
         <ul>
             <li><button class="download" onclick="download()">Download documentacion</button></li>
             <li><button id="convert-open-btn">Convert currency</button></li>
             <li><button id="sell-open-btn">Sell shares</button></li>
+            <li><button id="buy-open-btn">Buy shares</button></li>
             <li><a href="#">Put money into an account</a></li>
             {% if current_user.username == 'admin' %}
             <li><button id="admin-open-btn">Get admin panel</button></li>
@@ -68,36 +69,85 @@
         <section id="input">
             <h2>Sell</h2>
             <form method="POST">
-                <label for="shares">SHARES</label>
+                <label for="shares-sell">SHARES</label>
                 
                 <!-- Добавим обертку для инпута и кнопок валют -->
                 <div class="currency-input">
-                    <input type="text" id="shares" name="shares" required>
-                    <div class="shares-buttons">
-                        <button type="button" class="shares-btn" data-currency="HL">HL</button>
-                        <button type="button" class="shares-btn" data-currency="TUBE">TUBE</button>
+                    <input type="text" id="shares-sell" name="shares-sell" required>
+                    <div class="shares-buttons-sell">
+                        <button type="button" class="shares-btn-sell" data-currency="HL">HL</button>
+                        <button type="button" class="shares-btn-sell" data-currency="TUBE">TUBE</button>
                     </div>
                 </div>
 
-                <button type="submit" class="calculate-shares">Calculate</button>
+                <button type="submit" class="calculate-shares-sell">Calculate</button>
 
-                <label for="last_money">GET</label>
+                <label for="last_money_shares-sell">GET</label>
                 <div class="currency-input">
-                    <input type="text" id="last_money" name="last_money" readonly>
+                    <input type="text" id="last_money_shares-sell" name="last_money_shares-sell" readonly>
                     <div class="currency-buttons">
-                        <button type="button" class="shares-btn" data-currency="RUB">₽</button>
-                        <button type="button" class="shares-btn" data-currency="USD">$</button>
-                        <button type="button" class="shares-btn" data-currency="EUR">€</button>
+                        <button type="button" class="shares-btn-sell" data-currency="RUB">₽</button>
+                        <button type="button" class="shares-btn-sell" data-currency="USD">$</button>
+                        <button type="button" class="shares-btn-sell" data-currency="EUR">€</button>
                     </div>
                 </div>
 
-                <button type="submit" class="convert-shares">Sell</button>
+                <button type="submit" class="convert-shares-sell">Sell</button>
 
 
             </form>
         </section>
     </div>
 </div>
+
+
+
+
+
+
+
+
+
+<div class="modal" id="window-convert-buy">
+    <div class="convert">
+        <section id="input">
+            <h2>Buy</h2>
+            <form method="POST">
+                <label for="shares-buy">SHARES</label>
+                
+                <!-- Добавим обертку для инпута и кнопок валют -->
+                <div class="currency-input">
+                    <input type="text" id="shares-buy" name="shares-buy" required>
+                    <div class="shares-buttons-buy">
+                        <button type="button" class="shares-btn-buy" data-currency="HL">HL</button>
+                        <button type="button" class="shares-btn-buy" data-currency="TUBE">TUBE</button>
+                    </div>
+                </div>
+
+                <button type="submit" class="calculate-shares-buy">Calculate</button>
+
+                <label for="last_money_shares-buy">Price</label>
+                <div class="currency-input">
+                    <input type="text" id="last_money_shares-buy" name="last_money_shares-buy" readonly>
+                    <div class="shares-buttons-buy">
+                        <button type="button" class="shares-btn-buy" data-currency="RUB">₽</button>
+                        <button type="button" class="shares-btn-buy" data-currency="USD">$</button>
+                        <button type="button" class="shares-btn-buy" data-currency="EUR">€</button>
+                    </div>
+                </div>
+
+                <button type="submit" class="convert-shares-buy">Buy</button>
+
+
+            </form>
+        </section>
+    </div>
+</div>
+
+
+
+
+
 
 
 
@@ -144,14 +194,14 @@
 <main>
     <section class="welcome">
         <h1>Welcome to Crypto Exchange</h1>
-        <p>{{ current_user.username }}</p>
+        <h2>{{ current_user.username }}</h2>
     </section>
 
     <section class="balance">
-        <p>Balance</p> 
-        <p>{{ current_user.balance_RUB }} ₽</p> 
-        <p>{{ current_user.balance_USD }} $</p> 
-        <p>{{ current_user.balance_EUR }} €</p>
+        <p style="color: #00a7d9;">Balance:</p> 
+        <p>{{ current_user.balance_RUB }} ₽ | {{ current_user.balance_USD }} $ | {{ current_user.balance_EUR }} €</p>
+        <p style="color: #00a7d9;">Shares:</p>
+        <p>{{ current_user.shares_HL }} HL | {{ current_user.shares_TUBE }} TUBE</p>
     </section>
 
     <section class="chart">
@@ -198,7 +248,10 @@
 <script src="static/scripts/logout.js"></script>
 <script src="static/scripts/openConvert.js"></script>
 <script src="static/scripts/openSell.js"></script>
+<script src="static/scripts/openBuy.js"></script>
 <script src="static/scripts/convertMoney.js"></script>
 <script src="static/scripts/sellShares.js"></script>
+<script src="static/scripts/buyShares.js"></script>
+
 </body>
 </html>
