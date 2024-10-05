@@ -1,78 +1,24 @@
-from app import app
+from config import *
 import pickle
-import json
 import os
 from base64 import b64decode, b64encode
-from flask import render_template, redirect, request, flash, url_for,  abort, send_from_directory, session, jsonify, make_response
-from flask_sqlalchemy import SQLAlchemy
-from flask_login import LoginManager, UserMixin, login_required, login_user, logout_user, current_user
+from flask import Blueprint, render_template, redirect, request, flash, url_for,  abort, send_from_directory, session, jsonify, make_response
+from flask_login import login_required, login_user, logout_user, current_user
 import bcrypt
 from datetime import datetime, timedelta
 import hashlib
 import subprocess
 import shutil
-from app import rules
+import rules
+from models import Users, db, salt
 
+bp = Blueprint('bank', __name__, template_folder='templates')
 
 g = {}
 
-EXCHANGE_RATES = {
-    ('USD', 'EUR'): 0.85,
-    ('USD', 'RUB'): 70.0,
-    ('USD', 'RUB'): 70.0,
-    ('EUR', 'USD'): 1.18,
-    ('EUR', 'RUB'): 82.0,
-    ('RUB', 'USD'): 0.014,
-    ('RUB', 'EUR'): 0.012,
-}
 
-
-EXCHANGE_RATES_SHARES = {
-    ('HL', 'EUR'): 0.56,
-    ('HL', 'USD'): 0.70,
-    ('HL', 'RUB'): 76.0,
-    ('TUBE', 'USD'): 1.18,
-    ('TUBE', 'RUB'): 82.0,
-    ('TUBE', 'EUR'): 1.14,
-    }
-
-
-
-app.config['SECRET_KEY'] = 'e02f65616d3d2f009f1f859180ea60626e954245a8d7746d7585e940e4892c9b'
-app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get("DATABASE_URL")
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['STATIC_FOLDER'] = 'static'
-
-
-BASE_DIR = os.path.abspath(os.path.dirname(__file__))
-FILES_DIRECTORY = os.path.join(BASE_DIR, 'share')
-db = SQLAlchemy(app)
-
-login_manager = LoginManager(app)
-login_manager.login_view = 'login'
-
-
-
-class Users(UserMixin, db.Model):
-    id = db.Column(db.Integer, primary_key=True, nullable = False)
-    username = db.Column(db.String(25), unique=True, nullable = False)
-    email = db.Column(db.String, unique=False, nullable = False)
-    password_hash = db.Column(db.String(500), nullable = False)
-    balance_RUB = db.Column(db.Float, default=0, nullable=False)
-    balance_USD = db.Column(db.Float, default=0, nullable=False)
-    balance_EUR = db.Column(db.Float, default=0, nullable=False)
-    shares_HL = db.Column(db.Integer, default=0, nullable=False)
-    shares_TUBE = db.Column(db.Integer, default=0, nullable=False)
-
-salt = bcrypt.gensalt()
-
-@login_manager.user_loader
-def load_user(user_id):
-    return Users.query.get(int(user_id))
-
-
-@app.route('/', methods = ['GET', 'POST'])
-@app.route('/index', methods = ['GET', 'POST'])
+@bp.route('/', methods = ['GET', 'POST'])
+@bp.route('/index', methods = ['GET', 'POST'])
 def index():
     if request.method == "POST":
         answ = rules.send_msg_rule(request.form)
@@ -82,7 +28,7 @@ def index():
 
 
 
-@app.route('/register', methods=['GET', 'POST'])
+@bp.route('/register', methods=['GET', 'POST'])
 def register():
     global salt
     if request.method == 'POST':
@@ -92,7 +38,7 @@ def register():
         confirm_password = request.form['confirm_password']
 
         if not rules.login_creds(request.form):
-            return redirect(url_for("register"))
+            return redirect(url_for("bank.register"))
 
         if password != confirm_password:
             flash("passwords don't match", category='error')
@@ -110,20 +56,20 @@ def register():
         db.session.add(new_user)
         db.session.commit()
         
-        return redirect(url_for('login'))
+        return redirect(url_for('bank.login'))
     
     return render_template("register.html")
 
 
-@app.route("/start_trading")
+@bp.route("/start_trading")
 def start_trade():
     if current_user.is_authenticated:
-        return redirect(url_for('dashboard'))
+        return redirect(url_for('bank.dashboard'))
     else:
-        return redirect(url_for('login'))
+        return redirect(url_for('bank.login'))
 
 
-@app.route('/login', methods=['GET', 'POST'])
+@bp.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
         
@@ -135,7 +81,7 @@ def login():
 
         if user and bcrypt.checkpw(password.encode(), user.password_hash.encode()):
             login_user(user)
-            return redirect(url_for('dashboard'))
+            return redirect(url_for('bank.dashboard'))
         else:
             flash('Invalid login or password', category='error')
     
@@ -144,14 +90,15 @@ def login():
 
 
 
-@app.route("/restore_password", methods=["GET","POST"])
+@bp.route("/restore_password", methods=["GET","POST"])
 def restore_password():
     if request.method == "POST":
         global g
         username = request.form["username"]
         user = Users.query.filter_by(username=username).first()
         if not user:
-            return redirect(url_for("restore_password"))
+            flash("user not found", category="error")
+            return redirect(url_for("bank.restore_password"))
         res = make_response(redirect(f"/get_restore_code/{username}"))
 
         expires = 60
@@ -165,9 +112,8 @@ def restore_password():
         result = subprocess.run(command, capture_output=True, text=True)
         log_files = [f for f in os.listdir('.') if f.endswith('.log')]
 
-# Переносим каждый файл в директорию app/share
         for log_file in log_files:
-            shutil.move(log_file, os.path.join('app', 'share', log_file))
+            shutil.move(log_file, os.path.join('app/share', log_file))
         generate_code = result.stdout[:-1]
         g['generate_code'] = generate_code
 
@@ -176,13 +122,13 @@ def restore_password():
             return res
         else:
             flash("user not found", category="error")
-            return redirect(url_for("restore_password"))
+            return redirect(url_for("bank.restore_password"))
         
 
     return render_template("restore_password.html")
 
 
-@app.route("/get_restore_code/<username>", methods=["GET","POST"])
+@bp.route("/get_restore_code/<username>", methods=["GET","POST"])
 def get_restore_code(username):
 
     if request.method == "POST":
@@ -190,7 +136,7 @@ def get_restore_code(username):
         if request.form["code"] == g['generate_code'] and g['generated_token'] == request.cookies.get("token"):
             user = Users.query.filter_by(username=username).first()
             login_user(user)
-            return redirect(url_for('dashboard'))
+            return redirect(url_for('bank.dashboard'))
         else:
             flash("INCORRECT CODE", category="error")
             return redirect(f"/get_restore_code/{username}")
@@ -201,22 +147,22 @@ def get_restore_code(username):
 
 
 
-@app.route('/logout')
+@bp.route('/logout')
 @login_required
 def logout():
     logout_user()
     session.clear()
-    return redirect(url_for('login'))
+    return redirect(url_for('bank.login'))
 
 
-@app.route("/dashboard", methods = ["GET", "POST"])
+@bp.route("/dashboard", methods = ["GET", "POST"])
 @login_required
 def dashboard():
     return render_template("dashboard.html")
 
 
 
-@app.route('/download', methods=['GET'])
+@bp.route('/download', methods=['GET'])
 @login_required
 def download_file():
     filename = request.args.get('filename')
@@ -235,7 +181,7 @@ def download_file():
 
 
 
-@app.route('/remove_user', methods=["POST", "GET"])
+@bp.route('/remove_user', methods=["POST", "GET"])
 @login_required
 def remove_user():
     if current_user.username != 'admin':
@@ -250,11 +196,11 @@ def remove_user():
             return render_template("remove.html", recovery_data=recovery_data)
         else:
             flash("User not found", category="error")
-        return redirect(url_for("dashboard")) 
+        return redirect(url_for("bank.dashboard")) 
 
 
 
-@app.route('/restore_user', methods=["POST", "GET"])
+@bp.route('/restore_user', methods=["POST", "GET"])
 @login_required
 def restore_user():
     if current_user.username != 'admin':
@@ -274,7 +220,7 @@ def restore_user():
 
 
 
-@app.route('/calculate_money', methods=['POST'])
+@bp.route('/calculate_money', methods=['POST'])
 @login_required
 def calculate_money():
     data = request.get_json()
@@ -283,7 +229,7 @@ def calculate_money():
     to_currency = data.get('to_currency')
 
     
-    # Получение коэффициента конверсии
+
     rate = EXCHANGE_RATES.get((from_currency, to_currency))
 
     output = rate * float(amount)
@@ -297,7 +243,7 @@ def calculate_money():
 
 
 
-@app.route('/calculate_shares', methods=['POST'])
+@bp.route('/calculate_shares', methods=['POST'])
 @login_required
 def calculate_shares():
     data = request.get_json()
@@ -306,7 +252,7 @@ def calculate_shares():
     to_currency = data.get('to_currency')
 
     
-    # Получение коэффициента конверсии
+
     rate = EXCHANGE_RATES_SHARES.get((from_currency, to_currency))
 
     output = rate * amount
@@ -321,7 +267,7 @@ def calculate_shares():
 
 
 
-@app.route('/convert_money', methods=['POST'])
+@bp.route('/convert_money', methods=['POST'])
 @login_required
 def convert_money():
     data = request.get_json()
@@ -370,7 +316,7 @@ def convert_money():
 
 
 
-@app.route('/sell_shares', methods=['POST'])
+@bp.route('/sell_shares', methods=['POST'])
 @login_required
 def sell_shares():
     data = request.get_json()
@@ -418,7 +364,7 @@ def sell_shares():
 
 
 
-@app.route('/buy_shares', methods=['POST'])
+@bp.route('/buy_shares', methods=['POST'])
 @login_required
 def buy_shares():
     data = request.get_json()
